@@ -6,6 +6,7 @@ import DrawingCanvas from '@/components/DrawingCanvas';
 import Toolbar from '@/components/Toolbar';
 import ResultPanel from '@/components/ResultPanel';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const Index = () => {
   const [tool, setTool] = useState<'pen' | 'eraser'>('pen');
@@ -41,24 +42,36 @@ const Index = () => {
     
     try {
       // Get canvas data
-      const dataUrl = canvasRef.current.toDataURL('image/png');
+      const sketchBase64 = canvasRef.current.toDataURL('image/png');
       
-      // For now, show a message that Cloud needs to be enabled
-      toast.info('Enable Lovable Cloud to use AI image generation', {
-        description: 'Click the Cloud button below to get started',
-        duration: 5000,
+      toast.info('Generating your image...', { duration: 3000 });
+
+      const { data, error } = await supabase.functions.invoke('generate-image', {
+        body: { 
+          prompt: prompt.trim(),
+          sketchBase64 
+        }
       });
-      
-      // Simulate generation with placeholder
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // For demo, we'll just show the sketch itself
-      setGeneratedImage(dataUrl);
-      toast.success('Connect Lovable Cloud for AI-powered generation!');
+
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Failed to generate image');
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      if (data?.image) {
+        setGeneratedImage(data.image);
+        toast.success('Image generated successfully!');
+      } else {
+        throw new Error('No image returned');
+      }
       
     } catch (error) {
       console.error('Generation error:', error);
-      toast.error('Failed to generate image');
+      toast.error(error instanceof Error ? error.message : 'Failed to generate image');
     } finally {
       setIsGenerating(false);
     }
