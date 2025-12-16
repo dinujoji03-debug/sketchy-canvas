@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt } = await req.json();
+    const { prompt, sketchBase64 } = await req.json();
 
     if (!prompt) {
       return new Response(
@@ -20,53 +20,76 @@ serve(async (req) => {
       );
     }
 
-    const hfToken = Deno.env.get("HUGGING_FACE_ACCESS_TOKEN");
-    if (!hfToken) {
-      console.error("HUGGING_FACE_ACCESS_TOKEN not configured");
+    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    if (!apiKey) {
+      console.error("LOVABLE_API_KEY not configured");
       return new Response(
         JSON.stringify({ error: "AI service not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const enhancedPrompt = `${prompt}, highly detailed, professional quality, vibrant colors, digital art`;
+    const enhancedPrompt = `Transform this sketch into a detailed, polished image. Keep the exact same composition, shapes, and layout as the sketch. The result should look like: ${prompt}. Make it highly detailed, professional quality, vibrant colors.`;
     
-    console.log("Generating image with prompt:", enhancedPrompt);
+    console.log("Generating image from sketch with prompt:", enhancedPrompt);
 
-    // Use the new router endpoint
-    const response = await fetch(
-      "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell",
+    const messages: any[] = [
       {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${hfToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ inputs: enhancedPrompt }),
+        role: "user",
+        content: sketchBase64 ? [
+          {
+            type: "text",
+            text: enhancedPrompt
+          },
+          {
+            type: "image_url",
+            image_url: {
+              url: sketchBase64
+            }
+          }
+        ] : enhancedPrompt
       }
-    );
+    ];
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-image-preview",
+        messages,
+        modalities: ["image", "text"]
+      }),
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("HuggingFace API error:", response.status, errorText);
+      console.error("AI Gateway error:", response.status, errorText);
       return new Response(
         JSON.stringify({ error: "Failed to generate image", details: errorText }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    const data = await response.json();
+    console.log("AI response received");
+
+    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    
+    if (!imageUrl) {
+      console.error("No image in response:", JSON.stringify(data));
+      return new Response(
+        JSON.stringify({ error: "No image generated" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     console.log("Image generated successfully");
 
-    const arrayBuffer = await response.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
-    let binary = "";
-    for (let i = 0; i < uint8Array.length; i++) {
-      binary += String.fromCharCode(uint8Array[i]);
-    }
-    const base64 = btoa(binary);
-
     return new Response(
-      JSON.stringify({ image: `data:image/png;base64,${base64}` }),
+      JSON.stringify({ image: imageUrl }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
