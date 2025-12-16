@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { HfInference } from "https://esm.sh/@huggingface/inference@2.3.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,13 +6,12 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { prompt, sketchBase64 } = await req.json();
+    const { prompt } = await req.json();
 
     if (!prompt) {
       return new Response(
@@ -31,23 +29,35 @@ serve(async (req) => {
       );
     }
 
-    console.log("Initializing Hugging Face client...");
-    const hf = new HfInference(hfToken);
-
-    // Enhance the prompt to work better with sketch input
     const enhancedPrompt = `${prompt}, highly detailed, professional quality, vibrant colors, digital art`;
     
     console.log("Generating image with prompt:", enhancedPrompt);
 
-    const image = await hf.textToImage({
-      inputs: enhancedPrompt,
-      model: "black-forest-labs/FLUX.1-schnell",
-    });
+    // Use the new router endpoint
+    const response = await fetch(
+      "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${hfToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ inputs: enhancedPrompt }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("HuggingFace API error:", response.status, errorText);
+      return new Response(
+        JSON.stringify({ error: "Failed to generate image", details: errorText }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     console.log("Image generated successfully");
 
-    // Convert the blob to a base64 string
-    const arrayBuffer = await image.arrayBuffer();
+    const arrayBuffer = await response.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
     let binary = "";
     for (let i = 0; i < uint8Array.length; i++) {
