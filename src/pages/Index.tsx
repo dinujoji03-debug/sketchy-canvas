@@ -75,14 +75,14 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <div className="min-h-screen bg-background relative overflow-y-auto overflow-x-hidden">
       {/* Background glow effects */}
-      <div className="absolute inset-0 pointer-events-none">
+      <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
       </div>
 
-      <div className="relative z-10 container mx-auto px-4 py-6 h-screen flex flex-col">
+      <div className="relative z-10 container mx-auto px-4 py-6 min-h-screen flex flex-col">
         {/* Header */}
         <header className="flex items-center justify-between mb-6 animate-fade-in">
           <div className="flex items-center gap-3">
