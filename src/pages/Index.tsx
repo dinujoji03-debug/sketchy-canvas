@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Sparkles, Wand2 } from 'lucide-react';
+import { Sparkles, Wand2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import DrawingCanvas from '@/components/DrawingCanvas';
@@ -15,7 +15,9 @@ const Index = () => {
   const [prompt, setPrompt] = useState('');
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleCanvasReady = useCallback((canvas: HTMLCanvasElement) => {
     canvasRef.current = canvas;
@@ -25,7 +27,36 @@ const Index = () => {
     if (canvasRef.current && (canvasRef.current as any).clearCanvas) {
       (canvasRef.current as any).clearCanvas();
     }
+    setUploadedImage(null);
   }, []);
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      setUploadedImage(result);
+      toast.success('Sketch uploaded!');
+    };
+    reader.onerror = () => {
+      toast.error('Failed to read file');
+    };
+    reader.readAsDataURL(file);
+    
+    // Reset input so the same file can be uploaded again
+    e.target.value = '';
+  };
 
   const handleGenerate = async () => {
     if (!canvasRef.current) {
@@ -138,9 +169,9 @@ const Index = () => {
               </Button>
             </div>
 
-            {/* Canvas */}
+            {/* Canvas with Upload */}
             <div 
-              className="flex-1 glass-panel rounded-xl p-2 min-h-[400px] animate-fade-in"
+              className="flex-1 glass-panel rounded-xl p-2 min-h-[400px] animate-fade-in relative"
               style={{ animationDelay: '0.2s' }}
             >
               <div className="w-full h-full bg-white rounded-lg overflow-hidden shadow-inner">
@@ -149,8 +180,27 @@ const Index = () => {
                   brushSize={brushSize}
                   tool={tool}
                   onCanvasReady={handleCanvasReady}
+                  uploadedImage={uploadedImage}
                 />
               </div>
+              
+              {/* Upload Button */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept="image/*"
+                className="hidden"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleUploadClick}
+                className="absolute bottom-4 right-4 bg-background/80 backdrop-blur-sm"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Upload Sketch
+              </Button>
             </div>
           </div>
 

@@ -6,6 +6,7 @@ interface DrawingCanvasProps {
   brushSize: number;
   tool: 'pen' | 'eraser';
   onCanvasReady?: (canvas: HTMLCanvasElement) => void;
+  uploadedImage?: string | null;
   className?: string;
 }
 
@@ -14,6 +15,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   brushSize,
   tool,
   onCanvasReady,
+  uploadedImage,
   className,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -98,6 +100,30 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     context.fillStyle = '#ffffff';
     context.fillRect(0, 0, rect.width, rect.height);
   }, [context]);
+
+  // Load uploaded image onto canvas
+  useEffect(() => {
+    if (!uploadedImage || !context) return;
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const img = new Image();
+    img.onload = () => {
+      const rect = canvas.getBoundingClientRect();
+      // Clear canvas first
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, rect.width, rect.height);
+      
+      // Calculate scaling to fit image within canvas while maintaining aspect ratio
+      const scale = Math.min(rect.width / img.width, rect.height / img.height);
+      const x = (rect.width - img.width * scale) / 2;
+      const y = (rect.height - img.height * scale) / 2;
+      
+      context.drawImage(img, x, y, img.width * scale, img.height * scale);
+    };
+    img.src = uploadedImage;
+  }, [uploadedImage, context]);
 
   // Expose clear method
   useEffect(() => {
