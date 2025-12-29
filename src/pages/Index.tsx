@@ -64,10 +64,7 @@ const Index = () => {
       return;
     }
 
-    if (!prompt.trim()) {
-      toast.error('Please describe what you want to generate');
-      return;
-    }
+    // Prompt is now optional
 
     setIsGenerating(true);
     
@@ -79,7 +76,7 @@ const Index = () => {
 
       const { data, error } = await supabase.functions.invoke('generate-image', {
         body: { 
-          prompt: prompt.trim(),
+          prompt: prompt.trim() || 'Transform this sketch into a polished, detailed image',
           sketchBase64 
         }
       });
@@ -147,7 +144,7 @@ const Index = () => {
             {/* Prompt Input */}
             <div className="glass-panel rounded-xl p-3 flex gap-3 animate-fade-in" style={{ animationDelay: '0.1s' }}>
               <Input
-                placeholder="Describe the image you want to generate from your sketch..."
+                placeholder="(Optional) Describe the image you want to generate..."
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 className="flex-1 bg-secondary/50 border-border/50 focus:border-primary/50"
