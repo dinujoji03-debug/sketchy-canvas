@@ -95,7 +95,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
           <img
             src={imageUrl}
             alt="Generated Full Screen"
-            className="max-w-[90vw] max-h-[90vh] object-contain animate-scale-in"
+            className="w-auto h-auto max-w-[90vw] max-h-[85vh] object-contain animate-scale-in"
             onClick={(e) => e.stopPropagation()}
           />
         </div>
