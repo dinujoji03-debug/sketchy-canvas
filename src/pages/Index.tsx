@@ -69,7 +69,7 @@ const Index = () => {
     // Prompt is now optional
 
     setIsGenerating(true);
-    
+    setSimilarityScores(null);
     try {
       // Get canvas data
       const sketchBase64 = canvasRef.current.toDataURL('image/png');
