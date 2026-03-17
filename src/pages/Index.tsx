@@ -105,15 +105,6 @@ const Index = () => {
           });
           if (!scoreError && scoreData && !scoreData.error) {
             setSimilarityScores(scoreData);
-            console.log('=== Accuracy Scores ===');
-            console.log(`Composition: ${scoreData.composition}%`);
-            console.log(`Shape: ${scoreData.shape}%`);
-            console.log(`Detail: ${scoreData.detail}%`);
-            console.log(`Overall: ${scoreData.overall}%`);
-            console.log(`Summary: ${scoreData.summary}`);
-            console.log('=======================');
-          } else {
-            console.warn('Similarity analysis error:', scoreError || scoreData?.error);
           }
         } catch (e) {
           console.error('Similarity analysis failed:', e);
