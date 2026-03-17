@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import DrawingCanvas from '@/components/DrawingCanvas';
 import Toolbar from '@/components/Toolbar';
-import ResultPanel from '@/components/ResultPanel';
+import ResultPanel, { SimilarityScores } from '@/components/ResultPanel';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -15,6 +15,8 @@ const Index = () => {
   const [prompt, setPrompt] = useState('');
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [similarityScores, setSimilarityScores] = useState<SimilarityScores | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -67,7 +69,7 @@ const Index = () => {
     // Prompt is now optional
 
     setIsGenerating(true);
-    
+    setSimilarityScores(null);
     try {
       // Get canvas data
       const sketchBase64 = canvasRef.current.toDataURL('image/png');
@@ -93,6 +95,22 @@ const Index = () => {
       if (data?.image) {
         setGeneratedImage(data.image);
         toast.success('Image generated successfully!');
+        
+        // Analyze similarity in background
+        setIsAnalyzing(true);
+        try {
+          const sketchBase64 = canvasRef.current!.toDataURL('image/png');
+          const { data: scoreData, error: scoreError } = await supabase.functions.invoke('analyze-similarity', {
+            body: { sketchBase64, generatedImageBase64: data.image }
+          });
+          if (!scoreError && scoreData && !scoreData.error) {
+            setSimilarityScores(scoreData);
+          }
+        } catch (e) {
+          console.error('Similarity analysis failed:', e);
+        } finally {
+          setIsAnalyzing(false);
+        }
       } else {
         throw new Error('No image returned');
       }
@@ -220,6 +238,8 @@ const Index = () => {
               imageUrl={generatedImage}
               isLoading={isGenerating}
               onDownload={handleDownload}
+              similarityScores={similarityScores}
+              isAnalyzing={isAnalyzing}
             />
           </div>
         </div>
