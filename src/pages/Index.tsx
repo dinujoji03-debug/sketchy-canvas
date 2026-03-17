@@ -238,6 +238,8 @@ const Index = () => {
               imageUrl={generatedImage}
               isLoading={isGenerating}
               onDownload={handleDownload}
+              similarityScores={similarityScores}
+              isAnalyzing={isAnalyzing}
             />
           </div>
         </div>
