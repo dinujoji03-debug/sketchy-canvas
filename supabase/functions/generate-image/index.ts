@@ -74,7 +74,14 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log("AI response received");
+    console.log("AI response received, full structure:", JSON.stringify({
+      model: data.model,
+      usage: data.usage,
+      finishReason: data.choices?.[0]?.finish_reason,
+      hasImages: !!data.choices?.[0]?.message?.images?.length,
+      imageCount: data.choices?.[0]?.message?.images?.length || 0,
+      textContent: data.choices?.[0]?.message?.content?.substring(0, 500),
+    }));
 
     const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
     
