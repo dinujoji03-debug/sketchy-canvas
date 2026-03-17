@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import DrawingCanvas from '@/components/DrawingCanvas';
 import Toolbar from '@/components/Toolbar';
-import ResultPanel from '@/components/ResultPanel';
+import ResultPanel, { SimilarityScores } from '@/components/ResultPanel';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
