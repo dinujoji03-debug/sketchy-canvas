@@ -95,6 +95,22 @@ const Index = () => {
       if (data?.image) {
         setGeneratedImage(data.image);
         toast.success('Image generated successfully!');
+        
+        // Analyze similarity in background
+        setIsAnalyzing(true);
+        try {
+          const sketchBase64 = canvasRef.current!.toDataURL('image/png');
+          const { data: scoreData, error: scoreError } = await supabase.functions.invoke('analyze-similarity', {
+            body: { sketchBase64, generatedImageBase64: data.image }
+          });
+          if (!scoreError && scoreData && !scoreData.error) {
+            setSimilarityScores(scoreData);
+          }
+        } catch (e) {
+          console.error('Similarity analysis failed:', e);
+        } finally {
+          setIsAnalyzing(false);
+        }
       } else {
         throw new Error('No image returned');
       }
